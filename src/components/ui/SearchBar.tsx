@@ -34,10 +34,23 @@ export const SearchBar: React.FC<SearchBarProps> = ({ onSearchResults, onLoading
       
       if (response.items.length === 0) {
         toast.info("No results found for your search");
+      } else {
+        toast.success(`Found ${response.items.length} results`);
       }
     } catch (error) {
       console.error("Search failed:", error);
-      const errorMessage = error instanceof Error ? error.message : "Search failed. Please try again.";
+      let errorMessage = "Search failed. Please try again.";
+      
+      if (error instanceof Error) {
+        if (error.message.includes("403") || error.message.includes("API access denied")) {
+          errorMessage = "API access denied. The Custom Search API needs to be enabled in Google Cloud Console.";
+        } else if (error.message.includes("quota")) {
+          errorMessage = "API quota exceeded. Please try again later.";
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
       onError(errorMessage);
       toast.error(errorMessage);
     } finally {
