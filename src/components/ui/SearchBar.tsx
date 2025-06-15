@@ -1,15 +1,47 @@
-import React, { useState } from "react";
 
-export const SearchBar: React.FC = () => {
+import React, { useState } from "react";
+import { searchGoogle, SearchResult } from "@/services/searchService";
+import { toast } from "sonner";
+
+interface SearchBarProps {
+  onSearchResults: (results: SearchResult[], searchInfo: { searchTime: number; totalResults: string }) => void;
+  onLoading: (loading: boolean) => void;
+  onError: (error: string | null) => void;
+}
+
+export const SearchBar: React.FC<SearchBarProps> = ({ onSearchResults, onLoading, onError }) => {
   const [searchQuery, setSearchQuery] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (searchQuery.trim()) {
-      // In a real application, you would handle the search here
+    
+    if (!searchQuery.trim()) {
+      toast.error("Please enter a search query");
+      return;
+    }
+
+    onLoading(true);
+    onError(null);
+
+    try {
       console.log("Searching for:", searchQuery);
-      // For demo purposes, we'll just clear the input
-      setSearchQuery("");
+      const response = await searchGoogle(searchQuery);
+      
+      onSearchResults(response.items, {
+        searchTime: response.searchInformation.searchTime,
+        totalResults: response.searchInformation.totalResults
+      });
+      
+      if (response.items.length === 0) {
+        toast.info("No results found for your search");
+      }
+    } catch (error) {
+      console.error("Search failed:", error);
+      const errorMessage = error instanceof Error ? error.message : "Search failed. Please try again.";
+      onError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      onLoading(false);
     }
   };
 
@@ -25,7 +57,7 @@ export const SearchBar: React.FC = () => {
         />
         <button
           type="submit"
-          className="absolute right-4 top-1/2 transform -translate-y-1/2"
+          className="absolute right-4 top-1/2 transform -translate-y-1/2 hover:text-[#110B53] transition-colors"
           aria-label="Search"
         >
           <svg
